@@ -1,31 +1,57 @@
-import os, requests, base64
-from pytrends.request import TrendReq
+import os
+import requests
+import base64
 import google.generativeai as genai
+import xml.etree.ElementTree as ET
 
-# Load Secrets from GitHub
+# Load Secrets
 WP_USER = os.getenv("WP_USER")
 WP_APP_PW = os.getenv("WP_APP_PW")
 GEMINI_KEY = os.getenv("GEMINI_API_KEY")
 
-def run_bot():
-    # 1. Get Trend
-    pytrends = TrendReq(hl='en-US')
-    trend = pytrends.trending_searches(pn='united_states').iloc[0, 0]
-    
-    # 2. Generate Content
-    genai.configure(api_key=GEMINI_KEY)
-    model = genai.GenerativeModel('gemini-1.5-flash')
-    prompt = f"Write a 800-word SEO news article about {trend}. Use H2 tags, no plagiarism, engaging for Google Discover. Output in HTML."
-    content = model.generate_content(prompt).text
+def get_trending_topic():
+    # Fetching from Google News RSS instead of pytrends for 100% reliability
+    url = "https://news.google.com/rss?hl=en-US&gl=US&ceid=US:en"
+    response = requests.get(url)
+    root = ET.fromstring(response.content)
+    # Get the title of the very first trending news item
+    first_item = root.find('.//item/title').text
+    return first_item
 
-    # 3. Publish
-    wp_url = "https://trendingverse.online/wp-json/wp/v2/posts"
-    auth_header = base64.b64encode(f"{WP_USER}:{WP_APP_PW}".encode()).decode()
-    headers = {'Authorization': f'Basic {auth_header}'}
-    
-    data = {'title': trend, 'content': content, 'status': 'publish'}
-    res = requests.post(wp_url, headers=headers, json=data)
-    print(f"Status: {res.status_code}")
+def run_bot():
+    try:
+        topic = get_trending_topic()
+        print(f"Targeting Topic: {topic}")
+
+        # 1. Generate Article
+        genai.configure(api_key=GEMINI_KEY)
+        model = genai.GenerativeModel('gemini-1.5-flash')
+        prompt = f"Write a professional, SEO-friendly news article about: {topic}. Use HTML tags (H2, H3), ensure it's plagiarism-free, and optimized for Google Discover. Website: TrendingVerse.online"
+        
+        article_content = model.generate_content(prompt).text
+
+        # 2. WordPress API Setup
+        wp_url = "https://trendingverse.online/wp-json/wp/v2/posts"
+        auth_string = f"{WP_USER}:{WP_APP_PW}"
+        token = base64.b64encode(auth_string.encode()).decode()
+        headers = {'Authorization': f'Basic {token}'}
+
+        # 3. Publish
+        payload = {
+            'title': topic,
+            'content': article_content,
+            'status': 'publish'
+        }
+
+        res = requests.post(wp_url, headers=headers, json=payload)
+        
+        if res.status_code == 201:
+            print("Successfully published to TrendingVerse!")
+        else:
+            print(f"Failed to publish. Status: {res.status_code}, Error: {res.text}")
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
 
 if __name__ == "__main__":
     run_bot()
