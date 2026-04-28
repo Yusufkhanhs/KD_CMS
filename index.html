@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="kn">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ಕನ್ನಡ ದುನಿಯಾ CMS — Pro</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Kannada:wght@400;500;600&family=DM+Sans:wght@400;500;600&family=DM+Mono&display=swap" rel="stylesheet">
+<!-- Supabase JS client (free, CDN) -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+<!-- bcryptjs for client-side password hashing -->
+<script src="https://cdn.jsdelivr.net/npm/bcryptjs@2.4.3/bCrypt.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#fff;--bg2:#f8f8f6;--bg3:#f1f1ee;--bg4:#e9e9e5;
+  --text:#181816;--text2:#5c5c58;--text3:#9c9c96;
+  --bd:rgba(0,0,0,0.09);--bd2:rgba(0,0,0,0.16);
+  --ibg:#e6f1fb;--itx:#185fa5;
+  --sbg:#eaf3de;--stx:#3b6d11;--sbd:rgba(59,109,17,0.2);
+  --dbg:#fcebeb;--dtx:#a32d2d;--dbd:rgba(163,45,45,0.2);
+  --wbg:#faeeda;--wtx:#854f0b;--wbd:rgba(133,79,11,0.2);
+  --pbg:#EEEDFE;--ptx:#534AB7;
+  --r:8px;--rl:12px;--rxl:16px;--sidebar:228px;
+}
+@media(prefers-color-scheme:dark){:root{
+  --bg:#1c1c1a;--bg2:#232321;--bg3:#2a2a28;--bg4:#333330;
+  --text:#f0f0ec;--text2:#9c9c96;--text3:#5c5c58;
+  --bd:rgba(255,255,255,0.09);--bd2:rgba(255,255,255,0.16);
+  --ibg:#0c2a42;--itx:#85b7eb;--sbg:#172e08;--stx:#97c459;
+  --dbg:#2d1212;--dtx:#f09595;--wbg:#2c1e08;--wtx:#ef9f27;
+  --pbg:#26215C;--ptx:#AFA9EC;
+}}
+body{font-family:'DM Sans',sans-serif;font-size:14px;line-height:1.6;background:var(--bg3);color:var(--text);min-height:100vh}
+.kn{font-family:'Noto Sans Kannada',sans-serif;line-height:1.95}
+.app-shell{display:flex;min-height:100vh}
+.sidebar{width:var(--sidebar);background:var(--bg2);border-right:0.5px solid var(--bd);display:flex;flex-direction:column;padding:1.25rem 1rem;position:fixed;top:0;left:0;bottom:0;overflow-y:auto;z-index:100}
+.page{flex:1;margin-left:var(--sidebar);padding:2rem 2.5rem;min-width:0;max-width:960px}
+.login-shell{min-height:100vh;display:flex;align-items:center;justify-content:center;background:var(--bg3);padding:2rem}
+.login-card{width:100%;max-width:390px;background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--rxl);padding:2.5rem;box-shadow:0 8px 32px rgba(0,0,0,0.07)}
+.nav-sec{font-size:10px;color:var(--text3);padding:0 8px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;margin:1.25rem 0 5px}
+.nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--r);color:var(--text2);cursor:pointer;font-size:13px;margin-bottom:2px;border:none;background:none;width:100%;text-align:left;transition:all .12s}
+.nav-item:hover{background:var(--bg3);color:var(--text)}
+.nav-item.on{background:var(--bg3);color:var(--text);font-weight:500}
+.nav-item .ico{width:16px;text-align:center;flex-shrink:0;font-style:normal}
+.card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1.25rem;margin-bottom:1rem}
+.card-hd{padding:.875rem 1.25rem;border-bottom:0.5px solid var(--bd);font-size:13px;font-weight:500;display:flex;align-items:center;justify-content:space-between;gap:8px}
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:1.25rem}
+.stat{background:var(--bg2);border-radius:var(--r);padding:.875rem}
+.stat-lbl{font-size:11px;color:var(--text2);margin-bottom:4px}
+.stat-val{font-size:24px;font-weight:600;color:var(--text);line-height:1}
+input,textarea,select{width:100%;padding:8px 10px;background:var(--bg2);border:0.5px solid var(--bd);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;outline:none;transition:border-color .15s}
+input:focus,textarea:focus,select:focus{border-color:var(--bd2);background:var(--bg)}
+textarea{resize:vertical}
+label{font-size:11px;color:var(--text2);display:block;margin-bottom:3px}
+button{padding:8px 16px;background:var(--bg);border:0.5px solid var(--bd2);border-radius:var(--r);color:var(--text);font-family:'DM Sans',sans-serif;font-size:13px;cursor:pointer;transition:all .12s;display:inline-flex;align-items:center;gap:6px}
+button:hover{background:var(--bg3)}
+button:active{transform:scale(.98)}
+button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+button.primary{background:var(--text);color:var(--bg);border-color:var(--text)}
+button.primary:hover{opacity:.85;background:var(--text)}
+button.sm{padding:4px 10px;font-size:11px}
+button.danger{color:var(--dtx);border-color:var(--dbd)}
+.alert{padding:.625rem 1rem;border-radius:var(--r);font-size:13px;margin-bottom:.875rem}
+.err{background:var(--dbg);color:var(--dtx);border:0.5px solid var(--dbd)}
+.ok{background:var(--sbg);color:var(--stx);border:0.5px solid var(--sbd)}
+.warn{background:var(--wbg);color:var(--wtx);border:0.5px solid var(--wbd)}
+.bdg{display:inline-flex;align-items:center;padding:2px 8px;border-radius:100px;font-size:10px;font-weight:600;white-space:nowrap}
+.bdg-admin{background:var(--wbg);color:var(--wtx)}
+.bdg-writer{background:var(--ibg);color:var(--itx)}
+.bdg-saved{background:var(--sbg);color:var(--stx)}
+.cat-bdg{display:inline-block;padding:1px 7px;border-radius:100px;font-size:10px;background:var(--bg3);color:var(--text2);border:0.5px solid var(--bd)}
+.toggle{display:flex;background:var(--bg2);border-radius:var(--r);padding:3px;gap:3px;width:fit-content}
+.tgl{padding:5px 14px;border:none;border-radius:6px;cursor:pointer;font-size:12px;background:none;color:var(--text2);transition:all .12s}
+.tgl.on{background:var(--bg);color:var(--text);font-weight:500;border:0.5px solid var(--bd)}
+.tbl{width:100%;border-collapse:collapse;font-size:13px}
+.tbl th{text-align:left;padding:8px 12px;font-weight:500;font-size:11px;color:var(--text2);border-bottom:0.5px solid var(--bd);text-transform:uppercase;letter-spacing:.04em}
+.tbl td{padding:11px 12px;border-bottom:0.5px solid var(--bd);color:var(--text);vertical-align:middle}
+.tbl tr:last-child td{border-bottom:none}
+.tbl tbody tr:hover td{background:var(--bg2)}
+.spin{width:14px;height:14px;border:2px solid var(--bd2);border-top-color:var(--text2);border-radius:50%;animation:sp .65s linear infinite;flex-shrink:0}
+@keyframes sp{to{transform:rotate(360deg)}}
+.pg-hd{margin-bottom:1.5rem}
+.pg-ttl{font-size:18px;font-weight:600;margin-bottom:3px}
+.pg-sub{font-size:12px;color:var(--text2)}
+.logo{width:34px;height:34px;background:var(--text);border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--bg);font-size:16px;font-family:'Noto Sans Kannada',sans-serif;font-weight:600;flex-shrink:0}
+.seo-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:1rem 0}
+.seo-item{background:var(--bg2);border-radius:var(--r);padding:.875rem}
+.seo-lbl{font-size:10px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:5px}
+.seo-val{font-size:12px;color:var(--text);word-break:break-word}
+.art-item{padding:1rem 1.25rem;border-bottom:0.5px solid var(--bd);cursor:pointer;transition:background .1s}
+.art-item:last-child{border-bottom:none}
+.art-item:hover{background:var(--bg2)}
+.art-meta{font-size:11px;color:var(--text2);display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:4px}
+.trend-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.trend-card{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1rem;cursor:pointer;transition:all .15s}
+.trend-card:hover{border-color:var(--bd2);transform:translateY(-1px);box-shadow:0 4px 16px rgba(0,0,0,0.06)}
+.trend-ttl{font-size:13px;font-weight:500;color:var(--text);line-height:1.45;margin:8px 0 6px}
+.trend-sum{font-size:11px;color:var(--text2);line-height:1.6;margin-bottom:8px}
+.trend-ft{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.trend-gen-btn{padding:4px 10px;font-size:11px;background:var(--text);color:var(--bg);border:none;border-radius:6px;cursor:pointer;opacity:0;transition:opacity .15s}
+.trend-card:hover .trend-gen-btn{opacity:1}
+.filter-chip{padding:5px 12px;border-radius:100px;font-size:12px;border:0.5px solid var(--bd);background:var(--bg);color:var(--text2);cursor:pointer;transition:all .12s}
+.filter-chip:hover{border-color:var(--bd2);color:var(--text)}
+.filter-chip.on{background:var(--text);color:var(--bg);border-color:var(--text)}
+.output-box{background:var(--bg);border:0.5px solid var(--bd);border-radius:var(--rl);padding:1.5rem;margin-top:1.25rem}
+.fade{animation:fd .2s ease}
+@keyframes fd{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:none}}
+.ph{font-size:13px;color:var(--text2);text-align:center;padding:3rem}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px}
+code{font-family:'DM Mono',monospace;background:var(--bg2);padding:1px 5px;border-radius:4px;font-size:12px}
+a{color:var(--itx)}
+.setup-banner{background:var(--wbg);border:0.5px solid var(--wbd);border-radius:var(--rl);padding:1.5rem;margin-bottom:1.25rem}
+@media(max-width:680px){
+  .sidebar{position:static;width:100%;min-height:auto}
+  .page{margin-left:0;padding:1.25rem}
+  .app-shell{flex-direction:column}
+  .seo-grid,.form-row{grid-template-columns:1fr}
+  .trend-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+<div id="app">
+  <div style="min-height:100vh;display:flex;align-items:center;justify-content:center">
+    <div style="display:flex;align-items:center;gap:10px;color:var(--text2)">
+      <div class="spin"></div>Connecting to database…
+    </div>
+  </div>
+</div>
+
+<script>
+// ══════════════════════════════════════════════════════════════
+//  CONFIG — Edit these two lines with your Supabase credentials
+// ══════════════════════════════════════════════════════════════
+const SUPABASE_URL  = 'YOUR_SUPABASE_URL';   // e.g. https://xxxx.supabase.co
+const SUPABASE_ANON = 'YOUR_SUPABASE_ANON_KEY'; // from Project Settings → API
+
+// Claude model
+const MODEL = 'claude-sonnet-4-6';
+
+// ── SUPABASE CLIENT ───────────────────────────────────────────
+let db = null;
+function initDB() {
+  if (SUPABASE_URL === 'YOUR_SUPABASE_URL') return null;
+  db = supabase.createClient(SUPABASE_URL, SUPABASE_ANON);
+  return db;
+}
+
+// ── DB HELPERS ────────────────────────────────────────────────
+const DB = {
+  async getUsers() {
+    const {data,error} = await db.from('cms_users').select('*').order('created_at');
+    if (error) throw error;
+    return data || [];
+  },
+  async createUser(u) {
+    const {data,error} = await db.from('cms_users').insert(u).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async updateUser(id, patch) {
+    const {error} = await db.from('cms_users').update(patch).eq('id', id);
+    if (error) throw error;
+  },
+  async deleteUser(id) {
+    const {error} = await db.from('cms_users').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async getArticles() {
+    const {data,error} = await db.from('cms_articles').select('*').order('created_at', {ascending:false});
+    if (error) throw error;
+    return data || [];
+  },
+  async saveArticle(a) {
+    const {data,error} = await db.from('cms_articles').insert(a).select().single();
+    if (error) throw error;
+    return data;
+  },
+  async deleteArticle(id) {
+    const {error} = await db.from('cms_articles').delete().eq('id', id);
+    if (error) throw error;
+  },
+  async getApiKey(userId) {
+    const {data} = await db.from('cms_api_keys').select('api_key').eq('user_id', userId).single();
+    return data?.api_key || '';
+  },
+  async saveApiKey(userId, apiKey) {
+    const {error} = await db.from('cms_api_keys').upsert({user_id:userId, api_key:apiKey, updated_at:new Date().toISOString()});
+    if (error) throw error;
+  }
+};
+
+// ── SYSTEM PROMPTS ────────────────────────────────────────────
+const SYS_TRENDING = `You are a news intelligence engine. Search the web RIGHT NOW for the top 12 trending news stories across India, United States, and UAE. Return ONLY a valid JSON array — no markdown, no backticks. Each object: {"id":"unique_id_1","region":"India"|"US"|"UAE","category":"Politics"|"Business"|"Technology"|"Sports"|"Entertainment"|"World"|"Science"|"Health","title":"Compelling English headline (max 90 chars)","summary":"2-sentence factual summary (max 200 chars)","sources":["source1","source2"],"keywords":["kw1","kw2","kw3"]}. Return exactly 12 items: 4 India, 4 US, 4 UAE. Real current stories only.`;
+
+const SYS_ARTICLE = `You are a senior journalist at kannadadunia.com. Write a FRESH ORIGINAL Kannada news article (minimum 450 words). NOT a translation. Pure natural Kannada. Return ONLY valid JSON no markdown: {"headline":"","subheadline":"","seoTitle":"","metaDescription":"","slug":"english-slug","keywords":["k1","k2","k3","k4","k5","k6"],"schema":"NewsArticle","discoverScore":8,"discoverTip":"","imageAlt":"","article":"Full Kannada article with \\n\\n between paragraphs","wordCount":480}`;
+
+// ── HELPERS ───────────────────────────────────────────────────
+const todayStr = () => new Date().toISOString().slice(0,10);
+const weekAgo  = () => new Date(Date.now()-7*86400000).toISOString().slice(0,10);
+const fD = d => new Date(d).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'});
+const fT = d => new Date(d).toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+const esc = s => s ? String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;') : '';
+const hashPw = pw => dcodeIO.bcrypt.hashSync(pw, 10);
+const checkPw = (pw, hash) => dcodeIO.bcrypt.compareSync(pw, hash);
+
+// ── STATE ─────────────────────────────────────────────────────
+let S = {
+  ready: false, pg: 'boot', user: null,
+  users: [], arts: [], apiKey: '',
+  tab: 'trending', atab: 'dash', itype: 'url',
+  genning: false, genned: null, err: null, ok: null,
+  xid: null, saved: '', lErr: '', settingsMsg: '',
+  trends: [], trendLoading: false, trendErr: null,
+  trendLoaded: false, regionFilter: 'All', catFilter: 'All',
+  trendGenId: null, loading: false
+};
+
+// ── CLAUDE API ────────────────────────────────────────────────
+async function apiCall(system, userMsg, useSearch = false) {
+  if (!S.apiKey || !S.apiKey.startsWith('sk-ant-'))
+    throw new Error('Add your Anthropic API key in Settings first.');
+  const body = {model:MODEL, max_tokens:8000, system, messages:[{role:'user',content:userMsg}]};
+  if (useSearch) body.tools = [{type:'web_search_20250305',name:'web_search'}];
+  let msgs = [{role:'user',content:userMsg}];
+  for (let i = 0; i < 15; i++) {
+    const rb = {...body, messages:msgs};
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': S.apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify(rb)
+    });
+    const d = await res.json();
+    if (!res.ok) throw new Error(d.error?.message || `API Error ${res.status}`);
+    const txt = (d.content||[]).filter(b => b.type==='text');
+    const tu  = (d.content||[]).filter(b => b.type==='tool_use');
+    if (tu.length) {
+      msgs.push({role:'assistant',content:d.content});
+      msgs.push({role:'user',content:tu.map(tb=>({type:'tool_result',tool_use_id:tb.id,content:[]}))});
+      continue;
+    }
+    if (d.stop_reason==='end_turn' || txt.length) {
+      const t = txt.map(b=>b.text).join('');
+      const c = t.replace(/```json\n?|```/g,'').trim();
+      const m = c.match(/(\[[\s\S]*\]|\{[\s\S]*\})/);
+      try { return JSON.parse(m ? m[0] : c); }
+      catch { throw new Error('Parse error — please try again.'); }
+    }
+    break;
+  }
+  throw new Error('Generation failed — please try again.');
+}
+
+// ── RENDER UTILS ──────────────────────────────────────────────
+const regionDot = r => ({India:'#e74c3c',US:'#2c7be5',UAE:'#27ae60'}[r]||'var(--ptx)');
+const regionBg  = r => ({India:'#fff3f3',US:'#f0f4ff',UAE:'#f0fff4'}[r]||'var(--pbg)');
+const regionTx  = r => ({India:'#c0392b',US:'#2c4fa3',UAE:'#1a7a3c'}[r]||'var(--ptx)');
+const regionBdg = r => `<span class="bdg" style="background:${regionBg(r)};color:${regionTx(r)}"><span style="display:inline-block;width:6px;height:6px;border-radius:50%;background:${regionDot(r)};margin-right:4px"></span>${esc(r)}</span>`;
+const seoF = (lbl,val,kn=false) => `<div class="seo-item"><div class="seo-lbl">${lbl}</div><div class="seo-val${kn?' kn':''}" ${kn?'':'style="font-family:\'DM Mono\',monospace;font-size:11px"'}>${esc(val)}</div></div>`;
+const scoreBar = n => {
+  const pct = Math.round((n/10)*100);
+  const col = n>=8?'var(--stx)':n>=6?'var(--wtx)':'var(--dtx)';
+  return `<div style="display:flex;align-items:center;gap:8px"><div style="flex:1;height:5px;background:var(--bg3);border-radius:100px;overflow:hidden"><div style="width:${pct}%;height:100%;background:${col};border-radius:100px"></div></div><span style="font-size:12px;font-weight:600;color:${col};min-width:24px">${n}/10</span></div>`;
+};
+
+// ── SETUP SCREEN ──────────────────────────────────────────────
+function renderSetup() {
+  return `<div class="login-shell"><div class="login-card" style="max-width:480px">
+    <div style="text-align:center;margin-bottom:1.5rem">
+      <div class="logo" style="width:52px;height:52px;font-size:22px;margin:0 auto 12px">ಕ</div>
+      <div class="kn" style="font-size:17px;font-weight:600">ಕನ್ನಡ ದುನಿಯಾ CMS Pro</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px">DATABASE SETUP REQUIRED</div>
+    </div>
+    <div class="alert warn" style="font-size:12px;line-height:1.8">
+      <strong>⚠ Supabase not configured</strong><br>
+      Open <code>index.html</code> and set <code>SUPABASE_URL</code> and <code>SUPABASE_ANON</code> at the top of the script, then refresh.
+    </div>
+    <div style="font-size:12px;color:var(--text2);line-height:1.9">
+      <strong>Quick Setup:</strong><br>
+      1. Go to <a href="https://supabase.com" target="_blank">supabase.com</a> → New Project (free)<br>
+      2. SQL Editor → paste contents of <code>sql/schema.sql</code> → Run<br>
+      3. Project Settings → API → copy URL + anon key<br>
+      4. Paste into <code>index.html</code> top of script<br>
+      5. Push to GitHub → enable GitHub Pages<br><br>
+      See <code>README.md</code> for full instructions.
+    </div>
+  </div></div>`;
+}
+
+// ── LOGIN ─────────────────────────────────────────────────────
+function renderLogin() {
+  return `<div class="login-shell"><div class="login-card">
+    <div style="text-align:center;margin-bottom:2rem">
+      <div class="logo" style="width:52px;height:52px;font-size:22px;margin:0 auto 12px">ಕ</div>
+      <div class="kn" style="font-size:17px;font-weight:600">ಕನ್ನಡ ದುನಿಯಾ</div>
+      <div style="font-size:11px;color:var(--text2);margin-top:3px;font-weight:500;letter-spacing:.04em">CONTENT MANAGEMENT SYSTEM PRO</div>
+    </div>
+    ${S.lErr ? `<div class="alert err">${esc(S.lErr)}</div>` : ''}
+    <div style="margin-bottom:10px"><label>Username</label><input id="lu" type="text" placeholder="Enter username" autocomplete="username" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <div style="margin-bottom:1.5rem"><label>Password</label><input id="lp" type="password" placeholder="Enter password" autocomplete="current-password" onkeydown="if(event.key==='Enter')doLogin()"></div>
+    <button class="primary" onclick="doLogin()" style="width:100%;justify-content:center;padding:10px;font-size:14px" id="loginBtn">Sign in</button>
+    <div style="font-size:11px;color:var(--text2);text-align:center;margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid var(--bd)">Default: <code>admin</code> / <code>admin@123</code></div>
+  </div></div>`;
+}
+
+// ── SIDEBAR ───────────────────────────────────────────────────
+function renderSidebar() {
+  const isAdmin = S.user?.role === 'admin';
+  const wrNav = !isAdmin ? `
+    <div class="nav-sec">Content</div>
+    <button class="nav-item${S.tab==='trending'?' on':''}" onclick="setTab('trending')"><i class="ico">🔥</i>Trending Topics</button>
+    <button class="nav-item${S.tab==='gen'?' on':''}" onclick="setTab('gen')"><i class="ico">✦</i>Generate Article</button>
+    <button class="nav-item${S.tab==='mine'?' on':''}" onclick="setTab('mine')"><i class="ico">📄</i>My Articles</button>
+    <button class="nav-item${S.tab==='settings'?' on':''}" onclick="setTab('settings')"><i class="ico">⚙</i>Settings</button>`
+  : `
+    <div class="nav-sec">Admin</div>
+    <button class="nav-item${S.atab==='dash'?' on':''}" onclick="setATab('dash')"><i class="ico">◉</i>Dashboard</button>
+    <button class="nav-item${S.atab==='users'?' on':''}" onclick="setATab('users')"><i class="ico">👥</i>Users</button>
+    <button class="nav-item${S.atab==='arts'?' on':''}" onclick="setATab('arts')"><i class="ico">📋</i>All Articles</button>
+    <div class="nav-sec">Content</div>
+    <button class="nav-item${S.atab==='trending'?' on':''}" onclick="setATab('trending')"><i class="ico">🔥</i>Trending Topics</button>
+    <button class="nav-item${S.atab==='gen'?' on':''}" onclick="setATab('gen')"><i class="ico">✦</i>Generate Article</button>
+    <button class="nav-item${S.atab==='settings'?' on':''}" onclick="setATab('settings')"><i class="ico">⚙</i>Settings</button>`;
+  return `<div class="sidebar">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:1.75rem">
+      <div class="logo">ಕ</div>
+      <div><div style="font-size:13px;font-weight:600;font-family:'Noto Sans Kannada',sans-serif">ಕನ್ನಡ ದುನಿಯಾ</div><div style="font-size:10px;color:var(--text3);font-weight:500">CMS PRO</div></div>
+    </div>
+    ${wrNav}
+    <div style="flex:1"></div>
+    <div style="border-top:0.5px solid var(--bd);padding-top:.875rem;margin-top:1rem">
+      <div style="font-size:12px;font-weight:500">${esc(S.user?.name)}</div>
+      <div style="font-size:10px;color:var(--text2);margin-bottom:6px">${S.user?.role==='admin'?'Administrator':'Writer'} · @${esc(S.user?.username)}</div>
+      <button onclick="doLogout()" style="font-size:11px;color:var(--text2);background:none;border:none;padding:0;cursor:pointer">Sign out →</button>
+    </div>
+  </div>`;
+}
+
+// ── TRENDING ──────────────────────────────────────────────────
+function renderTrending() {
+  const REGIONS = ['All','India','US','UAE'];
+  const CATS = ['All','Politics','Business','Technology','Sports','Entertainment','World','Science','Health'];
+  const filtered = S.trends.filter(t =>
+    (S.regionFilter==='All'||t.region===S.regionFilter) &&
+    (S.catFilter==='All'||t.category===S.catFilter)
+  );
+  return `<div class="fade">
+    <div class="pg-hd">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px">
+        <div><div class="pg-ttl">🔥 Trending Topics</div><div class="pg-sub">Live trending news from India, US &amp; UAE</div></div>
+        <button onclick="loadTrending(true)" ${S.trendLoading?'disabled':''}>
+          ${S.trendLoading?`<span class="spin"></span> Fetching…`:'↻ Refresh Trends'}
+        </button>
+      </div>
+    </div>
+    ${S.trendErr?`<div class="alert err">${esc(S.trendErr)}</div>`:''}
+    ${!S.trendLoaded&&!S.trendLoading?`
+    <div class="card" style="text-align:center;padding:3rem">
+      <div style="font-size:32px;margin-bottom:12px">🌐</div>
+      <div style="font-size:14px;font-weight:500;margin-bottom:6px">Fetch Today's Trending Topics</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:1.5rem">Real-time stories from India, US and UAE via AI web search</div>
+      <button class="primary" onclick="loadTrending(true)" style="padding:10px 24px">🔥 Fetch Trending Topics Now</button>
+    </div>` : `
+    ${S.trendLoading?`<div class="card" style="padding:2rem"><div style="display:flex;align-items:center;gap:12px"><div class="spin"></div><div><div style="font-size:13px;font-weight:500">Searching trending news…</div><div style="font-size:11px;color:var(--text2)">Scanning India, US and UAE sources</div></div></div></div>`
+    :S.trends.length?`
+    <div style="margin-bottom:1.25rem">
+      <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap;margin-bottom:8px">
+        <span style="font-size:11px;color:var(--text2);font-weight:500">Region:</span>
+        ${REGIONS.map(r=>`<button class="filter-chip${S.regionFilter===r?' on':''}" onclick="setFilter('region','${r}')">${r}</button>`).join('')}
+        <div style="width:0.5px;height:20px;background:var(--bd)"></div>
+        <span style="font-size:11px;color:var(--text2);font-weight:500">Category:</span>
+        ${CATS.map(c=>`<button class="filter-chip${S.catFilter===c?' on':''}" onclick="setFilter('cat','${c}')">${c}</button>`).join('')}
+      </div>
+      <div style="font-size:11px;color:var(--text2)">
+        India: ${S.trends.filter(t=>t.region==='India').length} ·
+        US: ${S.trends.filter(t=>t.region==='US').length} ·
+        UAE: ${S.trends.filter(t=>t.region==='UAE').length} ·
+        Showing: ${filtered.length}
+      </div>
+    </div>
+    ${filtered.length===0?`<div class="ph">No topics match the selected filters.</div>`:`
+    <div class="trend-grid">
+      ${filtered.map(t=>`
+        <div class="trend-card${S.trendGenId===t.id?' loading':''}" onclick="genFromTrend('${t.id}')">
+          <div style="display:flex;align-items:center;justify-content:space-between;gap:6px">
+            ${regionBdg(t.region)}
+            <span class="cat-bdg">${esc(t.category)}</span>
+          </div>
+          <div class="trend-ttl">${esc(t.title)}</div>
+          <div class="trend-sum">${esc(t.summary)}</div>
+          <div class="trend-ft">
+            <div style="font-size:10px;color:var(--text3)">${(t.sources||[]).slice(0,2).map(s=>`<span>${esc(s)}</span>`).join(' · ')}</div>
+            ${S.trendGenId===t.id
+              ?`<div style="display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text2)"><span class="spin"></span>Generating…</div>`
+              :`<button class="trend-gen-btn" onclick="event.stopPropagation();genFromTrend('${t.id}')">✦ Write in Kannada</button>`}
+          </div>
+        </div>`).join('')}
+    </div>`}`:``}`}
+  </div>`;
+}
+
+// ── GENERATE ──────────────────────────────────────────────────
+function renderGen() {
+  const mArts = S.arts.filter(a => a.user_id === S.user.id);
+  const td = mArts.filter(a => a.created_at?.slice(0,10) === todayStr()).length;
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">✦ Generate Article</div><div class="pg-sub">Paste a news URL or article content — AI writes a fresh Kannada article</div></div>
+    ${!S.apiKey?`<div class="alert warn">⚠ API key not set. Go to Settings to add your Anthropic API key.</div>`:''}
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="stat-lbl">Today</div><div class="stat-val">${td}</div></div>
+      <div class="stat"><div class="stat-lbl">My Total</div><div class="stat-val">${mArts.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Site Total</div><div class="stat-val">${S.arts.length}</div></div>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:10px">Input Source</div>
+      <div class="toggle" style="margin-bottom:.875rem">
+        <button class="tgl${S.itype==='url'?' on':''}" onclick="setIT('url')">🔗 News URL</button>
+        <button class="tgl${S.itype==='content'?' on':''}" onclick="setIT('content')">📋 Paste Content</button>
+      </div>
+      ${S.itype==='url'
+        ?`<label>English News Article URL</label><input id="src" type="url" value="${esc(S.saved)}" placeholder="https://timesofindia.indiatimes.com/…" style="margin-bottom:10px">`
+        :`<label>Paste Article Text (English)</label><textarea id="src" rows="7" style="margin-bottom:10px">${esc(S.saved)}</textarea>`}
+      ${S.err?`<div class="alert err">${esc(S.err)}</div>`:''}
+      ${S.ok?`<div class="alert ok">${esc(S.ok)}</div>`:''}
+      <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <button class="primary" onclick="doGen()" ${S.genning?'disabled':''} style="min-width:220px;justify-content:center;padding:10px">
+          ${S.genning?`<span class="spin"></span> Generating…`:'✦ Generate Kannada Article'}
+        </button>
+        ${S.genning?`<span style="font-size:11px;color:var(--text2)">15–30 seconds…</span>`:''}
+      </div>
+      <div style="font-size:11px;color:var(--text2);margin-top:8px;display:flex;gap:12px;flex-wrap:wrap">
+        <span>✓ Original Kannada journalism</span><span>✓ Google Discover optimised</span><span>✓ Saved to Supabase</span>
+      </div>
+    </div>
+    ${S.genned?renderOutput(S.genned):''}
+  </div>`;
+}
+
+// ── OUTPUT ────────────────────────────────────────────────────
+function renderOutput(art) {
+  const kw = (art.keywords||[]).map(k=>`<span style="display:inline-block;padding:2px 8px;background:var(--bg2);border-radius:100px;font-size:11px;margin:0 3px 4px 0;border:0.5px solid var(--bd)" class="kn">${esc(k)}</span>`).join('');
+  const wc = art.word_count || art.wordCount || (art.article||'').split(/\s+/).length;
+  return `<div class="output-box fade">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:8px">
+      <div><div style="font-size:12px;font-weight:600;color:var(--text2)">GENERATED ARTICLE</div><div style="font-size:11px;color:var(--text3)">~${wc} words · Saved to database</div></div>
+      <div style="display:flex;gap:8px"><button onclick="cpAll()" class="sm">Copy All</button><span id="cps" style="font-size:11px;color:var(--stx);display:none">✓ Copied!</span></div>
+    </div>
+    <div style="padding-bottom:1.25rem;border-bottom:0.5px solid var(--bd);margin-bottom:1.25rem">
+      <div class="kn" style="font-size:21px;font-weight:600;line-height:1.4;margin-bottom:7px">${esc(art.headline)}</div>
+      <div class="kn" style="font-size:14px;color:var(--text2)">${esc(art.subheadline)}</div>
+    </div>
+    <div style="margin-bottom:1.25rem">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">Google Discover Score</div>
+      <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap">
+        <div style="flex:1;min-width:150px">${scoreBar(art.discover_score||art.discoverScore||0)}</div>
+        ${(art.discover_tip||art.discoverTip)?`<div style="font-size:12px;color:var(--text2);background:var(--bg2);padding:6px 10px;border-radius:var(--r);flex:2;min-width:180px">💡 ${esc(art.discover_tip||art.discoverTip)}</div>`:''}
+      </div>
+    </div>
+    <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:8px">SEO Metadata</div>
+    <div class="seo-grid">
+      ${seoF('SEO Title',art.seo_title||art.seoTitle,true)}
+      ${seoF('Meta Description',art.meta_description||art.metaDescription,true)}
+      <div class="seo-item"><div class="seo-lbl">URL Slug</div><div class="seo-val" style="font-family:'DM Mono',monospace;font-size:11px">/${esc(art.slug)}/</div></div>
+      <div class="seo-item"><div class="seo-lbl">Schema</div><div class="seo-val">${esc(art.schema_type||art.schema||'NewsArticle')}</div></div>
+    </div>
+    <div style="background:var(--bg2);border-radius:var(--r);padding:.875rem;margin-bottom:1rem">
+      <div class="seo-lbl" style="margin-bottom:6px">Focus Keywords</div>
+      <div>${kw}</div>
+    </div>
+    ${(art.image_alt||art.imageAlt)?`<div style="background:var(--bg2);border-radius:var(--r);padding:.875rem;margin-bottom:1rem"><div class="seo-lbl" style="margin-bottom:4px">Featured Image Alt Text</div><div class="kn" style="font-size:12px">${esc(art.image_alt||art.imageAlt)}</div></div>`:''}
+    <div style="border-top:0.5px solid var(--bd);padding-top:1.25rem;margin-top:.5rem">
+      <div style="font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:.07em;margin-bottom:1rem">Article Content</div>
+      <div class="kn" style="font-size:15px;line-height:2.1;white-space:pre-wrap">${esc(art.article)}</div>
+    </div>
+    <div style="margin-top:1rem;padding-top:.875rem;border-top:0.5px solid var(--bd);font-size:11px;color:var(--stx)">✓ Saved to Supabase · Original Kannada journalism · Copyright free</div>
+  </div>`;
+}
+
+// ── MY ARTICLES ───────────────────────────────────────────────
+function renderMine() {
+  const mArts = S.arts.filter(a => a.user_id === S.user.id);
+  const td = mArts.filter(a => a.created_at?.slice(0,10) === todayStr()).length;
+  const wk = mArts.filter(a => a.created_at?.slice(0,10) >= weekAgo()).length;
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">My Articles</div><div class="pg-sub">${mArts.length} articles — stored in Supabase</div></div>
+    <div class="stats-grid" style="grid-template-columns:repeat(3,1fr)">
+      <div class="stat"><div class="stat-lbl">Total</div><div class="stat-val">${mArts.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Today</div><div class="stat-val">${td}</div></div>
+      <div class="stat"><div class="stat-lbl">This Week</div><div class="stat-val">${wk}</div></div>
+    </div>
+    <div class="card" style="padding:0">
+      ${!mArts.length?`<div class="ph">No articles yet.<br>Use Generate Article or click any trending topic.</div>`:
+        mArts.map(a=>`<div class="art-item" onclick="toggleX('${a.id}')">
+          <div style="font-size:14px;font-weight:500;font-family:'Noto Sans Kannada',sans-serif">${esc(a.headline)}</div>
+          <div class="art-meta">
+            ${a.region?regionBdg(a.region):''}
+            <span>${fD(a.created_at)}, ${fT(a.created_at)}</span>
+            ${a.discover_score?`<span style="color:var(--stx);font-weight:500">Discover: ${a.discover_score}/10</span>`:''}
+            <span class="bdg bdg-saved">Saved</span>
+          </div>
+          ${S.xid===a.id?`<div style="margin-top:.875rem;padding-top:.875rem;border-top:0.5px solid var(--bd)">
+            <div class="seo-grid">${seoF('SEO Title',a.seo_title,true)}${seoF('Slug','/'+(a.slug||'')+'/')}</div>
+            <div class="kn" style="font-size:14px;line-height:2;white-space:pre-wrap;margin-top:.875rem">${esc(a.article)}</div>
+            <div style="display:flex;gap:8px;margin-top:.875rem">
+              <button onclick="event.stopPropagation();cpArtObj(${JSON.stringify(a).replace(/"/g,'&quot;')})" class="sm">Copy Article</button>
+              <button onclick="event.stopPropagation();delArt('${a.id}')" class="sm danger">Delete</button>
+            </div>
+          </div>`:''}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── SETTINGS ──────────────────────────────────────────────────
+function renderSettings() {
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">Settings</div><div class="pg-sub">API credentials and account preferences</div></div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px">Anthropic API Key</div>
+      <div style="font-size:12px;color:var(--text2);margin-bottom:10px">
+        Required for article generation. Get yours at <a href="https://console.anthropic.com/keys" target="_blank">console.anthropic.com</a><br>
+        Stored encrypted in Supabase — never exposed in code.
+      </div>
+      ${S.settingsMsg?`<div class="alert ok">${esc(S.settingsMsg)}</div>`:''}
+      <label>API Key</label>
+      <input id="ak" type="password" value="${esc(S.apiKey)}" placeholder="sk-ant-api03-…" style="font-family:'DM Mono',monospace;margin-bottom:10px">
+      <button onclick="saveKey()">Save API Key</button>
+    </div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:5px">Change Password</div>
+      <div class="form-row">
+        <div><label>New Password</label><input id="cp1" type="password" placeholder="Min 6 characters"></div>
+        <div><label>Confirm Password</label><input id="cp2" type="password" placeholder="Repeat"></div>
+      </div>
+      <button onclick="changePass()">Update Password</button>
+    </div>
+  </div>`;
+}
+
+// ── ADMIN: DASHBOARD ──────────────────────────────────────────
+function renderDash() {
+  const writers = S.users.filter(u => u.role==='writer');
+  const td = S.arts.filter(a => a.created_at?.slice(0,10)===todayStr());
+  const wk = S.arts.filter(a => a.created_at?.slice(0,10)>=weekAgo());
+  const rows = writers.map(u => {
+    const ua = S.arts.filter(a => a.user_id===u.id);
+    return {...u, tot:ua.length, td:ua.filter(a=>a.created_at?.slice(0,10)===todayStr()).length,
+      wk:ua.filter(a=>a.created_at?.slice(0,10)>=weekAgo()).length,
+      avg:ua.length?Math.round(ua.reduce((s,a)=>s+(a.discover_score||0),0)/ua.length*10)/10:0};
+  }).sort((a,b)=>b.tot-a.tot);
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">Dashboard</div><div class="pg-sub">Content production overview · Supabase database</div></div>
+    <div class="stats-grid">
+      <div class="stat"><div class="stat-lbl">Total Articles</div><div class="stat-val">${S.arts.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Writers</div><div class="stat-val">${writers.length}</div></div>
+      <div class="stat"><div class="stat-lbl">Today</div><div class="stat-val">${td.length}</div></div>
+      <div class="stat"><div class="stat-lbl">This Week</div><div class="stat-val">${wk.length}</div></div>
+    </div>
+    <div class="card" style="padding:0">
+      <div class="card-hd">Writer Performance</div>
+      ${!writers.length?`<div class="ph">No writers yet. Add from Users tab.</div>`:
+        `<table class="tbl"><thead><tr><th>Writer</th><th>Today</th><th>This Week</th><th>Total</th><th>Avg Discover</th></tr></thead><tbody>
+        ${rows.map(u=>`<tr><td><div style="font-weight:500">${esc(u.name)}</div><div style="font-size:11px;color:var(--text2)">@${esc(u.username)}</div></td><td><strong>${u.td}</strong></td><td>${u.wk}</td><td>${u.tot}</td><td>${u.avg?`<span style="color:var(--stx);font-weight:500">${u.avg}/10</span>`:'—'}</td></tr>`).join('')}
+        </tbody></table>`}
+    </div>
+    ${S.arts.length?`<div class="card" style="padding:0;margin-top:1rem">
+      <div class="card-hd">Recent Articles</div>
+      ${[...S.arts].slice(0,8).map(a=>`<div style="padding:.875rem 1.25rem;border-bottom:0.5px solid var(--bd);display:flex;gap:12px;align-items:center">${a.region?regionBdg(a.region):'<span></span>'}<div class="kn" style="font-size:13px;font-weight:500;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${esc(a.headline)}</div><div style="font-size:11px;color:var(--text2);flex-shrink:0">${esc(a.user_name)} · ${fD(a.created_at)}</div>${a.discover_score?`<span style="font-size:11px;color:var(--stx);font-weight:500;flex-shrink:0">${a.discover_score}/10</span>`:''}</div>`).join('')}
+    </div>`:''}
+  </div>`;
+}
+
+// ── ADMIN: USERS ──────────────────────────────────────────────
+function renderUsers() {
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">Users</div><div class="pg-sub">Manage team members</div></div>
+    <div class="card">
+      <div style="font-size:13px;font-weight:500;margin-bottom:.875rem">Create New User</div>
+      ${S.err?`<div class="alert err">${esc(S.err)}</div>`:''}
+      ${S.ok?`<div class="alert ok">${esc(S.ok)}</div>`:''}
+      <div class="form-row">
+        <div><label>Full Name</label><input id="nn" type="text" placeholder="e.g. Priya Kumar"></div>
+        <div><label>Username</label><input id="nu" type="text" placeholder="e.g. priya_kumar"></div>
+        <div><label>Password</label><input id="np" type="password" placeholder="Min 6 characters"></div>
+        <div><label>Role</label><select id="nr"><option value="writer">Writer</option><option value="admin">Admin</option></select></div>
+      </div>
+      <button onclick="doCreateUser()" id="createUserBtn">Create User</button>
+    </div>
+    <div class="card" style="padding:0">
+      <div class="card-hd">All Users (${S.users.length})</div>
+      <table class="tbl"><thead><tr><th>Name</th><th>Username</th><th>Role</th><th>Joined</th><th>Articles</th><th></th></tr></thead><tbody>
+        ${S.users.map(u=>{
+          const ac = S.arts.filter(a=>a.user_id===u.id).length;
+          return `<tr><td style="font-weight:500">${esc(u.name)}</td><td><code>@${esc(u.username)}</code></td><td><span class="bdg bdg-${u.role}">${u.role}</span></td><td style="color:var(--text2)">${fD(u.created_at)}</td><td>${ac}</td><td>${u.id!==S.user.id?`<button onclick="doDelUser('${u.id}')" class="sm danger">Delete</button>`:`<span style="font-size:11px;color:var(--text2)">You</span>`}</td></tr>`;
+        }).join('')}
+      </tbody></table>
+    </div>
+  </div>`;
+}
+
+// ── ADMIN: ALL ARTICLES ───────────────────────────────────────
+function renderAllArts() {
+  return `<div class="fade">
+    <div class="pg-hd"><div class="pg-ttl">All Articles (${S.arts.length})</div><div class="pg-sub">Complete history · Supabase database</div></div>
+    <div class="card" style="padding:0">
+      ${!S.arts.length?`<div class="ph">No articles yet.</div>`:
+        S.arts.map(a=>`<div class="art-item" onclick="toggleX('${a.id}')">
+          <div style="font-size:14px;font-weight:500;font-family:'Noto Sans Kannada',sans-serif">${esc(a.headline)}</div>
+          <div class="art-meta">${a.region?regionBdg(a.region):''}<span style="font-weight:500">${esc(a.user_name)}</span><span>${fD(a.created_at)}, ${fT(a.created_at)}</span>${a.discover_score?`<span style="color:var(--stx);font-weight:500">Discover ${a.discover_score}/10</span>`:''}</div>
+          ${S.xid===a.id?`<div style="margin-top:.875rem;padding-top:.875rem;border-top:0.5px solid var(--bd)">
+            <div class="seo-grid">${seoF('SEO Title',a.seo_title,true)}${seoF('Meta',a.meta_description,true)}</div>
+            <div class="kn" style="font-size:14px;line-height:2;white-space:pre-wrap;margin-top:.875rem">${esc(a.article)}</div>
+            <div style="display:flex;gap:8px;margin-top:.875rem">
+              <button onclick="event.stopPropagation();cpArt('${a.id}')" class="sm">Copy</button>
+              <button onclick="event.stopPropagation();delArt('${a.id}')" class="sm danger">Delete</button>
+            </div>
+          </div>`:''}
+        </div>`).join('')}
+    </div>
+  </div>`;
+}
+
+// ── MAIN RENDER ───────────────────────────────────────────────
+function render() {
+  const el = document.getElementById('app');
+  if (S.pg==='boot') { el.innerHTML=`<div style="min-height:100vh;display:flex;align-items:center;justify-content:center"><div style="display:flex;align-items:center;gap:10px;color:var(--text2)"><div class="spin"></div>Connecting to Supabase…</div></div>`; return; }
+  if (S.pg==='setup') { el.innerHTML=renderSetup(); return; }
+  if (S.pg==='login') { el.innerHTML=renderLogin(); return; }
+  const isAdmin = S.user?.role==='admin';
+  let main;
+  if (isAdmin) { main=({dash:renderDash,users:renderUsers,arts:renderAllArts,trending:renderTrending,gen:renderGen,settings:renderSettings}[S.atab]||renderDash)(); }
+  else { main=({trending:renderTrending,gen:renderGen,mine:renderMine,settings:renderSettings}[S.tab]||renderTrending)(); }
+  el.innerHTML=`<div class="app-shell">${renderSidebar()}<div class="page">${main}</div></div>`;
+}
+
+// ── AUTH ACTIONS ──────────────────────────────────────────────
+async function doLogin() {
+  const u = document.getElementById('lu')?.value?.trim();
+  const p = document.getElementById('lp')?.value;
+  if (!u||!p) { S.lErr='Please enter username and password.'; render(); return; }
+  const btn = document.getElementById('loginBtn');
+  if (btn) { btn.disabled=true; btn.innerHTML='<span class="spin"></span> Signing in…'; }
+  try {
+    const {data,error} = await db.from('cms_users').select('*').eq('username',u).single();
+    if (error||!data) throw new Error('User not found.');
+    const ok = checkPw(p, data.password);
+    if (!ok) throw new Error('Incorrect password.');
+    S.user = data;
+    S.pg = 'app';
+    S.lErr = '';
+    sessionStorage.setItem('kdp_sess', JSON.stringify({id:data.id,username:data.username}));
+    // Load data
+    await refreshData();
+    S.apiKey = await DB.getApiKey(data.id);
+    render();
+  } catch(e) {
+    S.lErr = e.message;
+    render();
+  }
+}
+
+async function doLogout() {
+  sessionStorage.removeItem('kdp_sess');
+  S.user=null; S.pg='login'; S.genned=null; S.err=null; S.ok=null; S.apiKey=''; S.arts=[]; S.users=[];
+  render();
+}
+
+async function refreshData() {
+  S.users = await DB.getUsers();
+  S.arts  = await DB.getArticles();
+}
+
+// ── NAV ───────────────────────────────────────────────────────
+function setTab(t)  { S.tab=t;  S.err=null; S.ok=null; S.xid=null; render(); }
+function setATab(t) { S.atab=t; S.err=null; S.ok=null; S.xid=null; render(); }
+function setIT(t)   { S.itype=t; S.err=null; S.saved=''; render(); }
+function toggleX(id){ S.xid=S.xid===id?null:id; render(); }
+function setFilter(type,val) { if(type==='region') S.regionFilter=val; else S.catFilter=val; render(); }
+
+// ── TRENDING ──────────────────────────────────────────────────
+async function loadTrending(force=false) {
+  if (S.trendLoading) return;
+  if (S.trendLoaded&&!force) return;
+  S.trendLoading=true; S.trendErr=null; render();
+  try {
+    const data = await apiCall(SYS_TRENDING,'Search for the top 12 trending news stories right now from India, United States, and UAE. Return as JSON array.',true);
+    S.trends = Array.isArray(data)?data:[];
+    S.trendLoaded=true; S.trendLoading=false; render();
+  } catch(e) { S.trendErr=e.message; S.trendLoading=false; render(); }
+}
+
+async function genFromTrend(id) {
+  const t = S.trends.find(x=>x.id===id);
+  if (!t) return;
+  S.trendGenId=id; S.genning=true; render();
+  try {
+    const prompt = `Write a fresh original Kannada news article about this trending story:\n\nTitle: ${t.title}\nSummary: ${t.summary}\nRegion: ${t.region}\nCategory: ${t.category}\nSources: ${(t.sources||[]).join(', ')}\n\nSearch the web for latest details. Write original Kannada — not a translation. Optimise for Google Discover.`;
+    const art = await apiCall(SYS_ARTICLE, prompt, true);
+    const rec = {
+      user_id: S.user.id, user_name: S.user.name, username: S.user.username,
+      headline: art.headline, subheadline: art.subheadline, article: art.article,
+      seo_title: art.seoTitle, meta_description: art.metaDescription, slug: art.slug,
+      keywords: art.keywords||[], schema_type: art.schema||'NewsArticle',
+      discover_score: art.discoverScore, discover_tip: art.discoverTip,
+      image_alt: art.imageAlt, word_count: art.wordCount,
+      region: t.region, category: t.category, input_type: 'trend', trend_title: t.title
+    };
+    const saved = await DB.saveArticle(rec);
+    S.arts = [saved, ...S.arts];
+    S.genned = saved;
+    S.trendGenId=null; S.genning=false;
+    if (S.user.role==='admin') S.atab='gen'; else S.tab='gen';
+    render();
+  } catch(e) { S.trendGenId=null; S.genning=false; S.trendErr=e.message; render(); }
+}
+
+// ── GENERATE ──────────────────────────────────────────────────
+async function doGen() {
+  const el = document.getElementById('src');
+  const input = el?.value?.trim();
+  if (!input) { S.err='Please enter a URL or paste article content.'; render(); return; }
+  S.saved=input; S.genning=true; S.err=null; S.ok=null; S.genned=null; render();
+  try {
+    const msg = S.itype==='url'
+      ? `News article URL: ${input}\n\nFetch this page, find authentic details, then write a fresh original Kannada article. NOT a translation. Optimise for Google Discover.`
+      : `Source content:\n\n${input}\n\nWrite a fresh original Kannada article. NOT a translation. Optimise for Google Discover.`;
+    const art = await apiCall(SYS_ARTICLE, msg, S.itype==='url');
+    const rec = {
+      user_id: S.user.id, user_name: S.user.name, username: S.user.username,
+      headline: art.headline, subheadline: art.subheadline, article: art.article,
+      seo_title: art.seoTitle, meta_description: art.metaDescription, slug: art.slug,
+      keywords: art.keywords||[], schema_type: art.schema||'NewsArticle',
+      discover_score: art.discoverScore, discover_tip: art.discoverTip,
+      image_alt: art.imageAlt, word_count: art.wordCount,
+      input_type: S.itype, source_url: S.itype==='url'?input:null
+    };
+    const saved = await DB.saveArticle(rec);
+    S.arts = [saved, ...S.arts];
+    S.genned = saved;
+    S.ok = '✓ Article generated and saved to Supabase!';
+    S.genning=false; render();
+  } catch(e) { S.err=e.message; S.genning=false; render(); }
+}
+
+// ── USERS ─────────────────────────────────────────────────────
+async function doCreateUser() {
+  const name  = document.getElementById('nn')?.value?.trim();
+  const uname = document.getElementById('nu')?.value?.trim();
+  const pass  = document.getElementById('np')?.value;
+  const role  = document.getElementById('nr')?.value;
+  if (!name||!uname||!pass) { S.err='All fields are required.'; render(); return; }
+  if (pass.length<6) { S.err='Password must be at least 6 characters.'; render(); return; }
+  if (S.users.find(u=>u.username===uname)) { S.err=`Username "@${uname}" already taken.`; render(); return; }
+  const btn = document.getElementById('createUserBtn');
+  if (btn) btn.disabled=true;
+  try {
+    const hashed = hashPw(pass);
+    const nu = await DB.createUser({username:uname, password:hashed, name, role});
+    S.users = [...S.users, nu];
+    S.ok=`User "${name}" created.`; S.err=null; render();
+  } catch(e) { S.err=e.message; render(); }
+}
+
+async function doDelUser(id) {
+  if (!confirm('Delete this user? Their articles will remain.')) return;
+  try {
+    await DB.deleteUser(id);
+    S.users=S.users.filter(u=>u.id!==id);
+    S.ok='User deleted.'; render();
+  } catch(e) { S.err=e.message; render(); }
+}
+
+async function delArt(id) {
+  if (!confirm('Delete this article permanently?')) return;
+  try {
+    await DB.deleteArticle(id);
+    S.arts=S.arts.filter(a=>a.id!==id);
+    S.xid=null; render();
+  } catch(e) { alert('Delete failed: '+e.message); }
+}
+
+// ── SETTINGS ACTIONS ──────────────────────────────────────────
+async function saveKey() {
+  const k = document.getElementById('ak')?.value?.trim();
+  if (k&&!k.startsWith('sk-ant-')) { alert('Invalid key. Anthropic keys start with sk-ant-'); return; }
+  try {
+    await DB.saveApiKey(S.user.id, k);
+    S.apiKey=k; S.settingsMsg='API key saved to Supabase.'; render();
+  } catch(e) { alert('Save failed: '+e.message); }
+}
+
+async function changePass() {
+  const p1 = document.getElementById('cp1')?.value;
+  const p2 = document.getElementById('cp2')?.value;
+  if (!p1||p1.length<6) { alert('Password must be at least 6 characters.'); return; }
+  if (p1!==p2) { alert('Passwords do not match.'); return; }
+  try {
+    const hashed = hashPw(p1);
+    await DB.updateUser(S.user.id, {password:hashed});
+    S.users=S.users.map(u=>u.id===S.user.id?{...u,password:hashed}:u);
+    S.settingsMsg='Password updated.'; render();
+  } catch(e) { alert('Update failed: '+e.message); }
+}
+
+// ── COPY ──────────────────────────────────────────────────────
+function cpAll() {
+  const a = S.genned; if (!a) return;
+  const t = `HEADLINE: ${a.headline}\nSUBHEADLINE: ${a.subheadline}\n\nSEO Title: ${a.seo_title||a.seoTitle}\nMeta: ${a.meta_description||a.metaDescription}\nSlug: /${a.slug}/\nDiscover: ${a.discover_score||a.discoverScore}/10\nKeywords: ${(a.keywords||[]).join(', ')}\n\n── ARTICLE ──\n\n${a.article}`;
+  navigator.clipboard.writeText(t).then(()=>{const el=document.getElementById('cps');if(el){el.style.display='inline';setTimeout(()=>el.style.display='none',2000);}}).catch(()=>{});
+}
+function cpArt(id) { const a=S.arts.find(x=>x.id===id); if(a) navigator.clipboard.writeText(`${a.headline}\n\n${a.article}`).catch(()=>{}); }
+function cpArtObj(a) { navigator.clipboard.writeText(`${a.headline}\n\n${a.article}`).catch(()=>{}); }
+
+Object.assign(window,{doLogin,doLogout,setTab,setATab,setIT,toggleX,setFilter,loadTrending,genFromTrend,doGen,doCreateUser,doDelUser,delArt,saveKey,changePass,cpAll,cpArt,cpArtObj});
+
+// ── BOOT ──────────────────────────────────────────────────────
+(async function boot() {
+  db = initDB();
+  if (!db) { S.pg='setup'; render(); return; }
+  // Check session
+  try {
+    const sess = sessionStorage.getItem('kdp_sess');
+    if (sess) {
+      const {id} = JSON.parse(sess);
+      const {data} = await db.from('cms_users').select('*').eq('id',id).single();
+      if (data) {
+        S.user = data;
+        S.pg   = 'app';
+        await refreshData();
+        S.apiKey = await DB.getApiKey(data.id);
+        render();
+        return;
+      }
+    }
+  } catch(e) {}
+  S.pg='login'; render();
+})();
+</script>
+</body>
+</html>
